@@ -16,13 +16,23 @@ namespace WebApi.Hubs
     public class AuthorizeHub : Hub<IAuthorizeHubClient>, IAuthorizeHub
     {
         private readonly ApplicationOptions _options;
-        private readonly List<PlayerTable> _players = new()
+        public record GamePlayer(long Id, int UserId, int ServerId)
         {
-            { new PlayerTable(1001,1,1) },
-            { new PlayerTable(2001,1,2) },
+            public IEnumerable<Claim> ToClaims()
+            {
+                yield return new Claim(JwtRegisteredClaimNames.Sub, Id.ToString());
 
-            { new PlayerTable(1002,2,1) },
-            { new PlayerTable(2002,2,2) },
+                yield return new Claim("server_id", ServerId.ToString());
+
+                yield return new Claim("user_id", UserId.ToString());
+            }
+        }
+        private readonly List<GamePlayer> _players = new()
+        {
+            { new GamePlayer(1001,1,1) },
+            { new GamePlayer(2001,1,2) },
+            { new GamePlayer(1002,2,1) },
+            { new GamePlayer(2002,2,2) },
         };
 
         public AuthorizeHub(IOptions<ApplicationOptions> options)
@@ -30,66 +40,51 @@ namespace WebApi.Hubs
             _options = options.Value ?? throw new ArgumentNullException(nameof(options));
         }
 
-        private static RsaSecurityKey CreateRsaSecurityKey()
+        private SigningCredentials SelectBestCandicate(string? keyId = null)
         {
-            return new RsaSecurityKey(RSA.Create(keySizeInBits: 2048))
+            var supportedKeys = _options.GetSupportedSecurityKeys().ToArray();
+
+            JsonWebKey? securityKey = null;
+
+            if (supportedKeys.Length == 0)
             {
-                KeyId = WebEncoders.Base64UrlEncode(Guid.NewGuid().ToByteArray())
-            };
-        }
+                throw new NotSupportedException("No any signing keys found.");
+            }
 
-        private static JsonWebKey CreateJsonWebKey()
-        {
-            var securityKey = CreateRsaSecurityKey();
-
-            var jwk = JsonWebKeyConverter.ConvertFromRSASecurityKey(securityKey);
-
-            jwk.Alg = "RS256";
-            jwk.Use = "sig";
-
-            return jwk;
-        }
-
-        private async Task<string> CreateAcessToken(PlayerTable player)
-        {
-            using var mem = new MemoryStream();
-            if (string.IsNullOrEmpty(_options.JsonWebKey))
+            if (string.IsNullOrEmpty(keyId))
             {
-                JsonSerializer.Serialize(mem, CreateJsonWebKey());
-
-                // for test.
-                _options.JsonWebKey = WebEncoders.Base64UrlEncode(mem.GetBuffer());
+                securityKey = supportedKeys.FirstOrDefault();
             }
             else
             {
-                await mem.WriteAsync(WebEncoders.Base64UrlDecode(_options.JsonWebKey));
+                securityKey = supportedKeys.FirstOrDefault(x => x.KeyId == keyId);
             }
 
-            mem.Seek(0, SeekOrigin.Begin);
+            if (securityKey == null)
+            {
+                throw new InvalidOperationException($"Could not found key '{keyId}'.");
+            }
 
-            var jwk = JsonSerializer.Deserialize<JsonWebKey>(mem)!;
+            return new SigningCredentials(securityKey, securityKey.Alg);
+        }
+
+        private string CreateAcessToken(GamePlayer player, string audience = "GameHub", string? keyId = null)
+        {
+            var configuration = _options.BuildOidcConfiguration();
 
             var handler = new JwtSecurityTokenHandler();
 
             // create security token
-            var credential = new SigningCredentials(jwk, jwk.Alg);
+            var credential = SelectBestCandicate(keyId);
             var header = new JwtHeader(credential);
 
             var currentTime = DateTime.UtcNow;
-            var issuer = "AuthorizeHub";
-            var audience = "GameHub";
-            var payload = new JwtPayload(issuer, audience, GetClaims(player.Id, player.UserId, player.ServerId), currentTime, currentTime.AddHours(1), currentTime);
+            var issuer = configuration.Issuer;
+            var payload = new JwtPayload(issuer, audience, player.ToClaims(), currentTime, currentTime.AddHours(1), currentTime);
 
             var token = new JwtSecurityToken(header, payload);
 
             return handler.WriteToken(token);
-        }
-
-        private static IEnumerable<Claim> GetClaims(long playerid, int userid, int serverId)
-        {
-            yield return new Claim(JwtRegisteredClaimNames.Sub, playerid.ToString());
-            yield return new Claim("user_id", userid.ToString());
-            yield return new Claim("server_id", serverId.ToString());
         }
 
         public async Task SignInAsync(SignInReq context)
@@ -101,34 +96,19 @@ namespace WebApi.Hubs
                 return;
             }
 
-            if (!_options.Servers.Contains(context.ServerId))
+            var ply = _players.SingleOrDefault(x => x.UserId == context.UserId && x.ServerId == context.ServerId);
+
+            if (ply == null)
             {
-                await Clients.Caller.OnFailed(2, "incorrect server.", null);
+                await Clients.Caller.OnFailed(2, "incorrect player.", null);
 
                 return;
             }
 
-            var ply = _players.FirstOrDefault(x => x.UserId == context.UserId && x.ServerId == context.ServerId);
-
-            var token = await CreateAcessToken(ply);
+            var token = CreateAcessToken(ply);
 
             await Clients.Caller.OnSucceed(token);
         }
 
-        public class PlayerTable
-        {
-            public PlayerTable(long id, int userId, int serverId)
-            {
-                Id = id;
-                UserId = userId;
-                ServerId = serverId;
-            }
-
-            public long Id { get; set; }
-
-            public int UserId { get; set; }
-
-            public int ServerId { get; set; }
-        }
     }
 }

@@ -20,7 +20,7 @@ namespace ConsoleApp
         public GameHubClient(string access_token)
         {
             _connection = new HubConnectionBuilder().WithAutomaticReconnect()
-                .WithUrl("https://localhost:7017/GameHub", options => { options.AccessTokenProvider = () => Task.FromResult(access_token)!; })
+                .WithUrl("http://localhost:5183/GameHub", options => { options.AccessTokenProvider = () => Task.FromResult(access_token)!; })
                 .Build();
 
             _connection.Reconnecting += async (error) =>

@@ -17,7 +17,7 @@ namespace ConsoleApp
         public AuthorizeHubClient()
         {
             _connection = new HubConnectionBuilder().WithAutomaticReconnect()
-                .WithUrl("https://localhost:7017/AuthorizeHub")
+                .WithUrl("http://localhost:5183/AuthorizeHub")
                 .Build();
 
 

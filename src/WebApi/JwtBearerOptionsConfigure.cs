@@ -1,12 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
-using System.Text.Json;
 
 namespace WebApi
 {
-    public class JwtBearerOptionsConfigure : IPostConfigureOptions<JwtBearerOptions>
+    public class JwtBearerOptionsConfigure : IConfigureNamedOptions<JwtBearerOptions>
     {
         private readonly IOptions<ApplicationOptions> _options;
 
@@ -15,30 +12,32 @@ namespace WebApi
             _options = options ?? throw new ArgumentNullException(nameof(options));
         }
 
-        public void PostConfigure(string? name, JwtBearerOptions options)
+        public void Configure(string? name, JwtBearerOptions options)
         {
-            if (string.Equals(name, JwtBearerDefaults.AuthenticationScheme))
+            if (JwtBearerDefaults.AuthenticationScheme == name)
             {
-                //options.Events ??= new();
+                options.Configuration = _options.Value.BuildOidcConfiguration();
+                options.Audience = "GameHub";
 
-                //options.Events.OnMessageReceived = context =>
-                //{
-                //    var access_token = context.Request.Query["access_token"];
+                options.Events ??= new JwtBearerEvents();
 
-                //    if (!string.IsNullOrEmpty(access_token))
-                //    {
-                //        context.Token = access_token;
-                //    }
+                options.Events.OnMessageReceived += (context) =>
+                {
+                    if (string.IsNullOrEmpty(context.Token) && !string.IsNullOrEmpty(context.Request.Query["access_token"]))
+                    {
+                        context.Token = context.Request.Query["access_token"];
 
-                //    return Task.CompletedTask;
-                //};
+                        return Task.CompletedTask;
+                    }
 
-                options.TokenValidationParameters ??= new();
-
-                options.TokenValidationParameters.ValidAudiences = new[] { "GameHub" };
-                options.TokenValidationParameters.IssuerSigningKey = JsonSerializer.Deserialize<JsonWebKey>(WebEncoders.Base64UrlDecode(_options.Value.JsonWebKey));
-                options.TokenValidationParameters.ValidIssuers = _options.Value.Issuers;
+                    return Task.CompletedTask;
+                };
             }
+        }
+
+        public void Configure(JwtBearerOptions options)
+        {
+            Configure(Options.DefaultName, options);
         }
     }
 }

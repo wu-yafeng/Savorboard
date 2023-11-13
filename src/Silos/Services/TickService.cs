@@ -18,15 +18,14 @@ namespace Silos.Services
     [Reentrant]
     public class TickService(GrainId grainId, Silo silo, ILoggerFactory loggerFactory) : GrainService(grainId, silo, loggerFactory), ITickService
     {
-        private IDisposable? _timer;
         private readonly ILogger _logger = loggerFactory.CreateLogger<TickService>();
         private readonly HashSet<IGameTickable> _observerManager = new();
 
         private class TickState
         {
-            public bool IsReset => UpdateTime.HasValue;
+            public bool IsReset { get; private set; }
 
-            public DateTimeOffset? UpdateTime { get; private set; }
+            public DateTimeOffset UpdateTime { get; private set; }
 
             public DateTimeOffset FrameRefreshTime { get; private set; }
             public int FrameRate { get; private set; }
@@ -35,6 +34,7 @@ namespace Silos.Services
 
             public void Reset(DateTimeOffset currentTime)
             {
+                IsReset = true;
                 FrameRefreshTime = currentTime;
                 UpdateTime = currentTime;
                 FrameRate = 0;
@@ -47,7 +47,7 @@ namespace Silos.Services
                     throw new InvalidOperationException("Need reset tick state.");
                 }
 
-                var delta = currentTime - UpdateTime.Value;
+                var delta = currentTime - UpdateTime;
 
                 UpdateTime = currentTime;
 
@@ -63,11 +63,27 @@ namespace Silos.Services
                 return delta;
             }
         }
-        public override async Task Start()
-        {
-            _timer = RegisterTimer(UpdateAsync, new TickState(), TimeSpan.FromSeconds(1), TimeSpan.FromMilliseconds(1));
 
-            await base.Start();
+        protected override async Task StartInBackground()
+        {
+            await base.StartInBackground();
+
+            var state = new TickState();
+
+            while (!StoppedCancellationTokenSource.IsCancellationRequested)
+            {
+                var prevframe = state.UpdateTime.Add(TimeSpan.FromMilliseconds(1000F / 128F));
+                await UpdateAsync(state);
+
+                // lock 128fps, timePerFrame = 1000 / 128;
+
+                var next = prevframe - DateTimeOffset.Now;
+
+                if (next > TimeSpan.Zero)
+                {
+                    await Task.Delay(next);
+                }
+            }
         }
 
         public override async Task Init(IServiceProvider serviceProvider)
@@ -77,7 +93,6 @@ namespace Silos.Services
 
         public override Task Stop()
         {
-            _timer?.Dispose();
             return base.Stop();
         }
 
