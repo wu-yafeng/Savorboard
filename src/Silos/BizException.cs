@@ -29,10 +29,28 @@ namespace Silos
         public IDictionary<string, object> ExtData { get; }
     }
 
+
+
+    /// <summary>
+    /// error codes
+    /// aaa_bbb_ccc
+    /// <para>
+    /// for aaa -> module_instance
+    /// </para>
+    /// <para>
+    /// for bbb -> http code
+    /// </para>
+    /// for ccc -> error index
+    /// </summary>
     public enum ErrorCodes
     {
+        RuntimeException = 010_500_01,
+        MetaDataItemNotFound = 010_404_01,
         Player_AttemptForceSignIn = 100_401_01,
         Backpack_Size_Is_Insufficient = 100_400_001,
-        BackPack_Item_Count_Is_Insufficient = 100_400_002,
+
+        // backpack module errors
+        Backpack_LvUpExpInsufficient = 110_400_001,
+        BackPack_ItemCountOut = 110_400_02,
     }
 }

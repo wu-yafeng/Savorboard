@@ -18,5 +18,7 @@ namespace Silos.PersistenStates
         public DateTimeOffset AddExpTime { get; set; }
 
         public int Level { get; set; }
+
+        public bool AutoExtBackpack { get; set; }
     }
 }

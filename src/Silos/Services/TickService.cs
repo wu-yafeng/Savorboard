@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Orleans.Concurrency;
 using Orleans.Runtime;
 using Orleans.Utilities;
+using Silos.Perf;
 using Silos.PersistenStates;
 using System;
 using System.Collections.Generic;
@@ -106,7 +107,7 @@ namespace Silos.Services
             if (!device.IsReset)
             {
                 device.Reset(DateTimeOffset.Now);
-                device.OnResetFrameRate += (fps) => _logger.LogInformation("server fps -> {fps}", fps);
+                device.OnResetFrameRate += (fps) => GameEventSource.Log.Tick(fps);
             }
 
             var deltaTime = device.GetDeltaTime(DateTimeOffset.Now);

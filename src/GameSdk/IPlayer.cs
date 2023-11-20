@@ -15,10 +15,11 @@ namespace GameSdk
         Task SubscribeAsync(IMessageChannel channel);
         Task UnsubscribeAsync(IMessageChannel channel);
         Task<UBackpackViewModel> GetBackpackViewDataAsync();
-        Task<UEquipViewModel> AddEquipAsync(AddEquipPack message);
+        Task AddEquipAsync(AddEquipPack message);
 
         Task SetMapAsync(IGameMap map);
 
         Task OnHurtAsync(USkill skill, IGameObj attaker);
+        Task UpgradeBackpackAsync(UpgradeBackpackPack messagePack);
     }
 }

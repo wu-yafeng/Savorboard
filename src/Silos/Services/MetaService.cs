@@ -33,7 +33,21 @@ namespace Silos.Services
 
             _items.Add(new MapData(1, "DefaultEntryMap"));
 
+            // 20 levels for backpack,each level exp is same.
+            _items.Add(new BackpackData(0, 50, 0));
+            for (var i = 1; i <= 20; i++)
+            {
+                _items.Add(new BackpackData(i, i * 5, i * 2));
+            }
+
+            // items
+            for (var i = 1; i < 5000; i++)
+            {
+                _items.Add(new ItemMeta(i, ItemMeta.FeatureType.AddBackpackExp, i * Random.Shared.Next(1, 10), 0));
+            }
+
             await base.Start();
         }
     }
+
 }

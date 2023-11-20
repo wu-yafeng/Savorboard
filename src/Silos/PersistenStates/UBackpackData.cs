@@ -1,4 +1,5 @@
-﻿using GameSdk.ViewModels;
+﻿using GameSdk.Base;
+using GameSdk.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,25 +11,84 @@ namespace Silos.PersistenStates
     public class UBackpackData
     {
         public int MaxSize { get; set; }
+        public int Exp { get; set; }
+        public int Level { get; set; }
+        public required List<UEquip> Equips { get; set; }
 
-        public required IList<UEquip> Equips { get; set; }
+        public required List<UItem> Items { get; set; }
 
-        public static UBackpackData Default()
+        public ErrorCodes? RemoveItem(UItem item, int count)
         {
-            return new UBackpackData()
+            var errorCode = default(ErrorCodes?);
+
+            // always succeed.
+            if (count < 0)
             {
-                Equips = new List<UEquip>(),
-                MaxSize = 50
-            };
+                return null;
+            }
+
+            var expect = item.Count - count;
+
+            if (expect < 0)
+            {
+                errorCode = ErrorCodes.BackPack_ItemCountOut;
+            }
+            else if (expect == 0)
+            {
+                Items.Remove(item);
+            }
+            else
+            {
+                item.Count = expect;
+            }
+
+            return errorCode;
+        }
+
+        public int GetCurrentSize()
+        {
+            return Equips.Count + Items.Count;
         }
 
         public UBackpackViewModel ToViewModel()
         {
             return new UBackpackViewModel()
             {
-                Equips = Equips.Select((x, i) => x.ToViewModel(i)).ToArray(),
+                Equips = Equips.Select(x => x.ToViewModel()).ToArray(),
                 MaxSize = MaxSize
             };
+        }
+
+        public static UBackpackData Default()
+        {
+            return new UBackpackData()
+            {
+                Equips = [],
+                Items = [],
+                Level = default,
+                MaxSize = default
+            };
+        }
+    }
+
+    public class UItem
+    {
+        public int ServerPos { get; set; }
+
+        public int BaseId { get; set; }
+
+        public int Count { get; set; }
+
+        private ItemMeta? _baseMeta;
+
+        public void SetMeta(ItemMeta meta)
+        {
+            _baseMeta = meta;
+        }
+
+        public ItemMeta GetMeta()
+        {
+            return _baseMeta ?? throw new BizException(ErrorCodes.RuntimeException);
         }
     }
 }
