@@ -63,8 +63,7 @@ namespace ConsoleApp
             // game ui loop
             while (!cancellationToken.IsCancellationRequested)
             {
-                Console.Clear();
-                Console.WriteLine("rendering frame#{0}...", frame_num);
+                await BeginScene(frame_num);
                 frame_num++;
 
                 // state sync.
@@ -75,14 +74,37 @@ namespace ConsoleApp
                 RenderInputMgr();
                 RenderChatMsg();
 
+                await EndScene();
+
+                await Present();
                 // 60fps
                 await Task.Delay(TimeSpan.FromMilliseconds(1000 / 60), cancellationToken);
             }
         }
 
+        private async Task BeginScene(int frameId)
+        {
+            _world.Surface.Clear();
+
+            if(!Console.IsOutputRedirected)
+            {
+                Console.Clear();
+            }
+        }
+
+        private async Task EndScene()
+        {
+            // nothing todo.
+        }
+
+        private async Task Present()
+        {
+            Console.Write(_world.Surface.ToString());
+        }
+
         private void RenderInputMgr()
         {
-            Console.WriteLine("InputMgr State: {0}", _world.KeyCharTop);
+            _world.Surface.AppendFormat("InputMgr State: {0}\n", _world.KeyCharTop);
         }
         private void RenderChatMsg()
         {
@@ -93,7 +115,7 @@ namespace ConsoleApp
 
             foreach (var item in _world.ChatMsgs)
             {
-                Console.WriteLine(item);
+                _world.Surface.AppendLine(item);
             }
         }
 

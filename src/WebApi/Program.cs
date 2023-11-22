@@ -18,6 +18,8 @@ using WebApi.Hubs;
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 var builder = WebApplication.CreateBuilder(args);
 
+builder.AddServiceDefaults();
+
 builder.Host.UseSavorboard();
 
 builder.Services.AddSignalR();
@@ -29,6 +31,8 @@ builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IConfigureOptions<
 builder.Services.Configure<ApplicationOptions>(builder.Configuration.GetSection("Application"));
 
 var app = builder.Build();
+
+app.MapDefaultEndpoints();
 
 //app.UseHttpsRedirection();
 

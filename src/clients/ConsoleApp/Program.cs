@@ -9,55 +9,31 @@ using System.Reflection;
 using System.Text;
 using WebApi.Protocols;
 
-bool gRpc = false;
+bool gRpc = true;
 bool signalR = false;
-while (!gRpc && !signalR)
+
+var builder = Host.CreateApplicationBuilder(args);
+
+builder.AddServiceDefaults();
+
+builder.Services.AddGrpcClient<GameHub.GameHubClient>(options =>
 {
-    Console.WriteLine("Enter protos[gRpc/SignalR] you like:");
+    options.Address = new Uri("http://grpcservice");
+});
 
-    var type = Console.ReadLine();
+builder.Services.TryAddSingleton(new GameWorld());
 
-    switch(type)
-    {
-        case "gRpc":
-            gRpc = true;
-            break;
-        case "signalR":
-            signalR = true;
-            break;
-        default:
-            Console.WriteLine("use default protos:gRpc");
-            gRpc = true;
-            break;
-    }
+
+if (gRpc)
+{
+    builder.Services.AddHostedService<GrpcNetworkMgr>();
 }
 
-var builder = Host.CreateDefaultBuilder(args)
-    .UseConsoleLifetime();
-
-builder.ConfigureServices(services =>
+if (signalR)
 {
-    services.AddGrpcClient<GameHub.GameHubClient>(options =>
-    {
-        options.Address = new Uri("http://localhost:5222");
-    });
-
-    services.TryAddSingleton(new GameWorld());
-
-
-    
-    if(gRpc)
-    {
-        services.AddHostedService<GrpcNetworkMgr>();
-    }
-
-    if(signalR)
-    {
-        services.AddHostedService<SignalRNetworkMgr>();
-    }
-    services.AddHostedService<GameUIHost>();
-
-});
+    builder.Services.AddHostedService<SignalRNetworkMgr>();
+}
+builder.Services.AddHostedService<GameUIHost>();
 
 var host = builder.Build();
 

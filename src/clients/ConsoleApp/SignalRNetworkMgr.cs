@@ -16,48 +16,9 @@ using WebApi.Protocols;
 
 namespace ConsoleApp
 {
-    public class SignalRNetworkMgr : BackgroundService, IGameHub, IMessageChannel
+    public class SignalRNetworkMgr(GameWorld world) : BackgroundService, IMessageChannel
     {
-        private readonly HubConnection _connection;
-        private readonly GameWorld _world;
-
-        public SignalRNetworkMgr(string access_token)
-        {
-            _connection = new HubConnectionBuilder().WithAutomaticReconnect()
-                .WithUrl("http://localhost:5183/GameHub", options => { options.AccessTokenProvider = () => Task.FromResult(access_token)!; })
-                .Build();
-
-            _connection.Reconnecting += async (error) =>
-            {
-                Console.WriteLine("[-] Connection losed, reconnection ...");
-            };
-
-            _connection.Reconnected += async (error) =>
-            {
-                Console.WriteLine("[-] Connection reconnected successfully ...");
-            };
-
-            // register all handlers.
-            static async Task InvokeHandler(object caller, MethodInfo method, params object?[] parameters)
-            {
-                var result = method.Invoke(caller, parameters);
-
-                await (Task)result!;
-            }
-
-            foreach (var method in typeof(IMessageChannel).GetInterfaces().SelectMany(i => i.GetMethods(BindingFlags.Public | BindingFlags.Instance)))
-            {
-                if (method.ReturnType.IsAssignableTo(typeof(Task)))
-                {
-                    _connection.On(method.Name, method.GetParameters().Select(x => x.ParameterType).ToArray(), (parameterValues) => InvokeHandler(this, method, parameterValues));
-                }
-            }
-        }
-
-        public Task HeartbeatAsync()
-        {
-            return _connection.SendAsync(nameof(HeartbeatAsync));
-        }
+        private readonly GameWorld _world = world;
 
         public Task OnEquipAddedAsync(UEquipViewModel equipAdded)
         {
@@ -70,11 +31,6 @@ namespace ConsoleApp
                 }),
             });
             return Task.CompletedTask;
-        }
-
-        public Task<UBackpackViewModel> GetBackpackAsync()
-        {
-            return _connection.InvokeAsync<UBackpackViewModel>(nameof(GetBackpackAsync));
         }
 
         public Task OnShowChatMsgAsync(string name, string message)
@@ -117,7 +73,47 @@ namespace ConsoleApp
             return Task.CompletedTask;
         }
 
-        protected override Task ExecuteAsync(CancellationToken stoppingToken)
-        => _connection.StartAsync(stoppingToken);
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        {
+            var authorize = new AuthorizeHubClient();
+
+            await authorize.StartAsync();
+
+            await authorize.SignInAsync(new SignInReq(1, "1", 1));
+
+            await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
+
+            var _connection = new HubConnectionBuilder().WithAutomaticReconnect()
+                 .WithUrl("http://localhost:5183/GameHub", options => { options.AccessTokenProvider = () => Task.FromResult(authorize.AccessToken)!; })
+                 .Build();
+
+            _connection.Reconnecting += async (error) =>
+            {
+                Console.WriteLine("[-] Connection losed, reconnection ...");
+            };
+
+            _connection.Reconnected += async (error) =>
+            {
+                Console.WriteLine("[-] Connection reconnected successfully ...");
+            };
+
+            // register all handlers.
+            static async Task InvokeHandler(object caller, MethodInfo method, params object?[] parameters)
+            {
+                var result = method.Invoke(caller, parameters);
+
+                await (Task)result!;
+            }
+
+            foreach (var method in typeof(IMessageChannel).GetInterfaces().SelectMany(i => i.GetMethods(BindingFlags.Public | BindingFlags.Instance)))
+            {
+                if (method.ReturnType.IsAssignableTo(typeof(Task)))
+                {
+                    _connection.On(method.Name, method.GetParameters().Select(x => x.ParameterType).ToArray(), (parameterValues) => InvokeHandler(this, method, parameterValues));
+                }
+            }
+
+            await _connection.StartAsync(stoppingToken);
+        }
     }
 }

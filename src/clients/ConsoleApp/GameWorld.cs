@@ -13,5 +13,7 @@ namespace ConsoleApp
         public string? KeyCharTop { get; set; }
 
         public LinkedList<string> ChatMsgs { get; set; } = new();
+
+        public StringBuilder Surface { get; } = new();
     }
 }

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UserSecretsId>810235f3-3e61-42d0-98ee-4346481daf0c</UserSecretsId>
@@ -20,6 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Savorboard.ServiceDefaults\Savorboard.ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\GameSdk\GameSdk.csproj" />
   </ItemGroup>
 
