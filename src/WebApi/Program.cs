@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Silos;
 using Silos.Grains;
 using Silos.Services;
 using System.IdentityModel.Tokens.Jwt;
@@ -17,16 +18,7 @@ using WebApi.Hubs;
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Host.UseOrleans(orleans =>
-{
-    orleans.UseLocalhostClustering()
-        .AddMemoryGrainStorageAsDefault();
-});
-
-builder.Services.AddGrainService<TickService>();
-builder.Services.AddGrainService<MetaService>();
-builder.Services.AddSingleton(typeof(IServiceClient<>), typeof(DefaultGrainServiceClient<>));
-
+builder.Host.UseSavorboard();
 
 builder.Services.AddSignalR();
 

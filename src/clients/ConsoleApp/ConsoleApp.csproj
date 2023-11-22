@@ -5,10 +5,18 @@
     <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <UserSecretsId>810235f3-3e61-42d0-98ee-4346481daf0c</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Google.Protobuf" Version="3.25.1" />
+    <PackageReference Include="Grpc.Net.ClientFactory" Version="2.59.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.59.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="7.0.13" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -16,9 +24,10 @@
   </ItemGroup>
 
 	<ItemGroup>
-		<Compile Include="..\..\WebApi\Protocols\*.cs" >
+		<Compile Include="..\..\WebApi\Protocols\*.cs">
 			<Link>dependencies\Protocols\%(RecursiveDir)/%(FileName)%(Extension)</Link>
 		</Compile>
+		<Protobuf Include="Protos\GameHubService.proto" GrpcServices="Client" />
 	</ItemGroup>
 
 </Project>
