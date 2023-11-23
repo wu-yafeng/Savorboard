@@ -86,10 +86,17 @@ namespace GrpcService.Services
             }
         }
 
+        private long GetUserId(ServerCallContext context)
+        {
+            var userid = context.AuthContext.IsPeerAuthenticated ? 1 : 1;
+
+            return userid;
+        }
+
         public override async Task Subscribe(SubscribeRequest request, IServerStreamWriter<MessageEvent> responseStream, ServerCallContext context)
         {
             // retrive from auth context.
-            var userid = context.AuthContext.IsPeerAuthenticated ? 1 : 1;
+            var userid = GetUserId(context);
 
             var world = _client.GetGrain<IGameWorld>(1);
 
@@ -119,6 +126,20 @@ namespace GrpcService.Services
 
                 await Task.Delay(TimeSpan.FromSeconds(30));
             }
+        }
+
+        public override async Task<BackpackViewModel> GetBackpackViewModel(GetBackpackViewModelPack request, ServerCallContext context)
+        {
+            var userid = GetUserId(context);
+
+            var currentPlayer = _client.GetGrain<IPlayer>(userid);
+
+            var viewmodel = await currentPlayer.GetBackpackViewDataAsync();
+
+            return new BackpackViewModel()
+            {
+                MaxSize = viewmodel.MaxSize
+            };
         }
     }
 }

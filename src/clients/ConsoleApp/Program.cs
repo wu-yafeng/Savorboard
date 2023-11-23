@@ -1,5 +1,6 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using ConsoleApp;
+using ConsoleApp.Protos;
 using GameSdk;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,16 +10,14 @@ using System.Reflection;
 using System.Text;
 using WebApi.Protocols;
 
-bool gRpc = true;
-bool signalR = false;
+bool gRpc = false;
+bool signalR = true;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-builder.AddServiceDefaults();
-
 builder.Services.AddGrpcClient<GameHub.GameHubClient>(options =>
 {
-    options.Address = new Uri("http://grpcservice");
+    options.Address = new Uri("http://localhost:5222/");
 });
 
 builder.Services.TryAddSingleton(new GameWorld());
@@ -26,13 +25,16 @@ builder.Services.TryAddSingleton(new GameWorld());
 
 if (gRpc)
 {
-    builder.Services.AddHostedService<GrpcNetworkMgr>();
+    builder.Services.TryAddSingleton<IAsyncNetwork, GrpcNetworkMgr>();
 }
 
 if (signalR)
 {
-    builder.Services.AddHostedService<SignalRNetworkMgr>();
+    builder.Services.TryAddSingleton<IAsyncNetwork, SignalRNetworkMgr>();
 }
+
+builder.Services.AddHostedService<NetworkMgr>();
+
 builder.Services.AddHostedService<GameUIHost>();
 
 var host = builder.Build();

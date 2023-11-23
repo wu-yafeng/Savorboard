@@ -1,4 +1,5 @@
-﻿using Google.Protobuf.WellKnownTypes;
+﻿using ConsoleApp.Protos;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
@@ -12,10 +13,12 @@ namespace ConsoleApp
     public class GameUIHost : IHostedService
     {
         private readonly GameWorld _world;
+        private readonly IAsyncNetwork _networkMgr;
 
-        public GameUIHost(GameWorld world)
+        public GameUIHost(GameWorld world, IAsyncNetwork networkMgr)
         {
             _world = world ?? throw new ArgumentNullException(nameof(world));
+            _networkMgr = networkMgr;
         }
 
         private ConsoleKeyInfo? PeekMessage()
@@ -28,6 +31,13 @@ namespace ConsoleApp
             return null;
         }
 
+        private async Task OpenBackpack()
+        {
+            var viewmodel = await _networkMgr.GetBackpackDataViewModelAsync(new GetBackpackViewModelPack());
+
+            _world.BackpackView.AppendLine($"Your backpack size is -> {viewmodel.MaxSize}");
+        }
+
         private void InputMgrHandler()
         {
             var message = PeekMessage();
@@ -38,14 +48,24 @@ namespace ConsoleApp
                 return;
             }
 
+            if (message.Value.Key == ConsoleKey.F2)
+            {
+                if (_world.BackpackView.Length == 0)
+                    _ = OpenBackpack();
+                else
+                    _world.BackpackView.Clear();
+            }
+
             _world.KeyCharTop = string.Format("{0} + {1} + {2}", message.Value.Modifiers, message.Value.Key, message.Value.KeyChar);
         }
 
-        private void SyncServerState()
+        private async Task SyncServerState()
         {
             for (var i = 0; i < 10; i++)
             {
-                if (!_world.Messages.TryDequeue(out var events))
+                var events = await _networkMgr.PeekAsync();
+
+                if (events == null)
                 {
                     break;
                 }
@@ -67,11 +87,12 @@ namespace ConsoleApp
                 frame_num++;
 
                 // state sync.
-                SyncServerState();
+                await SyncServerState();
                 InputMgrHandler();
 
                 // render
                 RenderInputMgr();
+                RenderBackpackView();
                 RenderChatMsg();
 
                 await EndScene();
@@ -86,7 +107,7 @@ namespace ConsoleApp
         {
             _world.Surface.Clear();
 
-            if(!Console.IsOutputRedirected)
+            if (!Console.IsOutputRedirected)
             {
                 Console.Clear();
             }
@@ -102,6 +123,10 @@ namespace ConsoleApp
             Console.Write(_world.Surface.ToString());
         }
 
+        private void RenderBackpackView()
+        {
+            _world.Surface.Append(_world.BackpackView);
+        }
         private void RenderInputMgr()
         {
             _world.Surface.AppendFormat("InputMgr State: {0}\n", _world.KeyCharTop);

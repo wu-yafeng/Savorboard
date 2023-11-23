@@ -8,12 +8,12 @@ namespace ConsoleApp
 {
     public sealed class GameWorld
     {
-        public Queue<MessageEvent> Messages { get; } = new();
-
         public string? KeyCharTop { get; set; }
 
         public LinkedList<string> ChatMsgs { get; set; } = new();
 
         public StringBuilder Surface { get; } = new();
+
+        public StringBuilder BackpackView { get; } = new();
     }
 }

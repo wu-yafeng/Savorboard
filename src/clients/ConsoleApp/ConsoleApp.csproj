@@ -20,7 +20,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Savorboard.ServiceDefaults\Savorboard.ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\GameSdk\GameSdk.csproj" />
   </ItemGroup>
 

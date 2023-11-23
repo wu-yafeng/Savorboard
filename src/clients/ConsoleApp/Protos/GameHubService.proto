@@ -4,9 +4,19 @@ option csharp_namespace = "ConsoleApp";
 
 package gamehub;
 
+
 // The greeting service definition.
 service GameHub {
 	rpc Subscribe(SubscribeRequest) returns (stream MessageEvent);
+	rpc GetBackpackViewModel(GetBackpackViewModelPack) returns (BackpackViewModel);
+}
+
+message GetBackpackViewModelPack{
+	
+}
+
+message BackpackViewModel {
+	int32 MaxSize = 1;
 }
 
 message MessageEvent {

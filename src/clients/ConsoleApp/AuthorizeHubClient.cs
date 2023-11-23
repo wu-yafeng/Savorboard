@@ -50,9 +50,11 @@ namespace ConsoleApp
         }
         public Task StartAsync() =>
             _connection.StartAsync();
-        public string? AccessToken { get; set; }
+        public string? AccessToken { get; private set; }
+        public bool? IsSucceed { get; set; }
         public Task OnSucceed(string access_token)
         {
+            IsSucceed = true;
             AccessToken = access_token;
 
             Console.WriteLine("Login Success:{0}", access_token);
@@ -68,6 +70,7 @@ namespace ConsoleApp
         public Task OnFailed(int ErrorCode, string Message, object? ExtensionData)
         {
             Console.WriteLine("Login failed[{0}]:{1}", ErrorCode, Message);
+            IsSucceed = false;
             return Task.CompletedTask;
         }
     }
