@@ -8,6 +8,10 @@ using System.Threading.Tasks;
 
 namespace ConsoleApp
 {
+    /// <summary>
+    /// Game Network Thread. Sync state from server to local.
+    /// </summary>
+    /// <param name="network"></param>
     public class NetworkMgr(IAsyncNetwork network) : BackgroundService
     {
         private IAsyncNetwork _network = network ?? throw new ArgumentNullException(nameof(network));

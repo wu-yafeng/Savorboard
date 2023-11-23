@@ -10,8 +10,8 @@ using System.Reflection;
 using System.Text;
 using WebApi.Protocols;
 
-bool gRpc = false;
-bool signalR = true;
+bool gRpc = true;
+bool signalR = false;
 
 var builder = Host.CreateApplicationBuilder(args);
 

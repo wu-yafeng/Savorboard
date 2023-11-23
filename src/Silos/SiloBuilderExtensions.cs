@@ -1,6 +1,8 @@
 ﻿using GameSdk.Services;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Orleans.Configuration;
 using Silos.Services;
 using System;
 using System.Collections.Generic;
@@ -14,10 +16,29 @@ namespace Silos
     {
         public static IHostBuilder UseSavorboard(this IHostBuilder builder)
         {
-            builder.UseOrleans(orleans =>
+            builder.UseOrleans((context, orleans) =>
             {
-                orleans.UseLocalhostClustering()
-                    .AddMemoryGrainStorageAsDefault();
+                var connectionString = context.Configuration.GetConnectionString("MySql4Orleans");
+
+                if (!string.IsNullOrEmpty(connectionString))
+                {
+                    orleans.UseAdoNetClustering(options =>
+                    {
+                        options.ConnectionString = connectionString;
+                        options.Invariant = "MySql.Data.MySqlClient";
+                    });
+                }
+                else
+                {
+                    orleans.UseLocalhostClustering();
+                }
+
+                orleans.AddMemoryGrainStorageAsDefault();
+
+                var siloPort = context.Configuration.GetValue<int>("ORLEANS_SILOPORT", EndpointOptions.DEFAULT_SILO_PORT);
+                var gatewayPort = context.Configuration.GetValue<int>("ORLEANS_GATEPORT", EndpointOptions.DEFAULT_GATEWAY_PORT);
+
+                orleans.ConfigureEndpoints(siloPort, gatewayPort);
             });
 
             builder.ConfigureServices(services =>

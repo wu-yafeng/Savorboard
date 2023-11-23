@@ -10,6 +10,9 @@ using System.Threading.Tasks;
 
 namespace ConsoleApp
 {
+    /// <summary>
+    /// Game UI Main Thread. Render and handling inputs.
+    /// </summary>
     public class GameUIHost : IHostedService
     {
         private readonly GameWorld _world;

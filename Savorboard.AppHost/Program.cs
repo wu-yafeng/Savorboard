@@ -1,7 +1,14 @@
+using Microsoft.Extensions.Configuration;
+
 var builder = DistributedApplication.CreateBuilder(args);
 
-var grpc = builder.AddProject<Projects.GrpcService>("grpcservice");
+var connectionString = builder.Configuration.GetConnectionString("GameCluster");
 
-var signalr = builder.AddProject<Projects.WebApi>("webapi");
+builder.AddProject<Projects.GrpcService>("grpcservice")
+    .AsHttp2Service()
+    .WithEnvironment("CONNECTIONSTRINGS__MYSQL4ORLEANS", connectionString);
+
+builder.AddProject<Projects.WebApi>("webapi")
+    .WithEnvironment("CONNECTIONSTRINGS__MYSQL4ORLEANS", connectionString);
 
 builder.Build().Run();
