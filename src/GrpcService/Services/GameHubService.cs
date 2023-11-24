@@ -3,6 +3,7 @@ using GameSdk.Observers;
 using GameSdk.ViewModels;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
+using Savorboard.Protocols;
 using System.Text.Json;
 
 namespace GrpcService.Services
@@ -18,71 +19,47 @@ namespace GrpcService.Services
 
         private class GrpcMessageChannel : IMessageChannel
         {
-            private readonly IServerStreamWriter<MessageEvent> _responseStream;
+            private readonly IServerStreamWriter<Any> _responseStream;
 
-            public GrpcMessageChannel(IServerStreamWriter<MessageEvent> responseStream)
+            public GrpcMessageChannel(IServerStreamWriter<Any> responseStream)
             {
                 _responseStream = responseStream ?? throw new ArgumentNullException(nameof(responseStream));
             }
 
             public async Task OnEquipAddedAsync(UEquipViewModel equipAdded)
             {
-                var pack = Any.Pack(new ChatMsg()
+                await _responseStream.WriteAsync(Any.Pack(new ChatMsg()
                 {
                     Channel = 1,
                     Content = JsonSerializer.Serialize(equipAdded)
-                });
-
-                await _responseStream.WriteAsync(new MessageEvent()
-                {
-                    Seq = 1,
-                    Data = pack
-                });
+                }));
             }
 
             public async Task OnGameObjExtiAsync(long id, string type)
             {
-                var pack = Any.Pack(new ChatMsg()
+                await _responseStream.WriteAsync(Any.Pack(new ChatMsg()
                 {
                     Channel = 1,
                     Content = $"id:{id},type:{type}"
-                });
-
-                await _responseStream.WriteAsync(new MessageEvent()
-                {
-                    Seq = 1,
-                    Data = pack
-                });
+                }));
             }
 
             public async Task OnHurtAsync(int skillid, int atker, string type)
             {
-                var pack = Any.Pack(new ChatMsg()
+                await _responseStream.WriteAsync(Any.Pack(new ChatMsg()
                 {
                     Channel = 1,
                     Content = $"skill:{skillid} atker:{atker} type:{type}"
-                });
-
-                await _responseStream.WriteAsync(new MessageEvent()
-                {
-                    Seq = 1,
-                    Data = pack
-                });
+                }));
             }
 
             public async Task OnShowChatMsgAsync(string name, string message)
             {
-                var pack = Any.Pack(new ChatMsg()
+                await _responseStream.WriteAsync(Any.Pack(new ChatMsg()
                 {
                     Channel = 1,
                     Content = $"{name}:::{message}"
-                });
-
-                await _responseStream.WriteAsync(new MessageEvent()
-                {
-                    Seq = 1,
-                    Data = pack
-                });
+                }));
             }
         }
 
@@ -93,7 +70,7 @@ namespace GrpcService.Services
             return userid;
         }
 
-        public override async Task Subscribe(SubscribeRequest request, IServerStreamWriter<MessageEvent> responseStream, ServerCallContext context)
+        public override async Task Subscribe(SubscribeRequest request, IServerStreamWriter<Any> responseStream, ServerCallContext context)
         {
             // retrive from auth context.
             var userid = GetUserId(context);
@@ -102,15 +79,11 @@ namespace GrpcService.Services
 
             if (!await world.IsWorkingAsync())
             {
-                await responseStream.WriteAsync(new MessageEvent()
+                await responseStream.WriteAsync(Any.Pack(new ChatMsg()
                 {
-                    Data = Any.Pack(new ChatMsg()
-                    {
-                        Channel = 1,
-                        Content = "server is not working."
-                    }),
-                    Seq = 1
-                });
+                    Channel = 1,
+                    Content = "server is not working."
+                }));
             }
 
             var currentPlayer = _client.GetGrain<IPlayer>(userid);

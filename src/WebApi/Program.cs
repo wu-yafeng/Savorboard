@@ -22,7 +22,10 @@ builder.AddServiceDefaults();
 
 builder.Host.UseSavorboard();
 
-builder.Services.AddSignalR();
+builder.Services.AddSignalR()
+    .AddJsonProtocol(options=> {
+        options.PayloadSerializerOptions.Converters.Add(new ByteStringConverter());
+    });
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer();

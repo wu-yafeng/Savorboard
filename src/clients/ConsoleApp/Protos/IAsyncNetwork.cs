@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Google.Protobuf.WellKnownTypes;
+using GrpcService;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,7 +10,7 @@ namespace ConsoleApp.Protos
 {
     public interface IAsyncNetwork
     {
-        Task<MessageEvent?> PeekAsync();
+        Task<Any?> PeekAsync();
 
         Task StartAsync(CancellationToken cancellationToken = default);
 

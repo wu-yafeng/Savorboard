@@ -2,6 +2,7 @@
 using ConsoleApp;
 using ConsoleApp.Protos;
 using GameSdk;
+using GrpcService;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -10,8 +11,8 @@ using System.Reflection;
 using System.Text;
 using WebApi.Protocols;
 
-bool gRpc = true;
-bool signalR = false;
+bool gRpc = false;
+bool signalR = true;
 
 var builder = Host.CreateApplicationBuilder(args);
 

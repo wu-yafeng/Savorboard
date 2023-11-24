@@ -2,6 +2,7 @@
 using GameSdk.Observers;
 using GameSdk.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Orleans.Concurrency;
 using Orleans.Runtime;
@@ -17,10 +18,11 @@ using System.Threading.Tasks;
 namespace Silos.Services
 {
     [Reentrant]
-    public class TickService(GrainId grainId, Silo silo, ILoggerFactory loggerFactory) : GrainService(grainId, silo, loggerFactory), ITickService
+    public class TickService(GrainId grainId, Silo silo, ILoggerFactory loggerFactory, IHostEnvironment environment) : GrainService(grainId, silo, loggerFactory), ITickService
     {
         private readonly ILogger _logger = loggerFactory.CreateLogger<TickService>();
         private readonly HashSet<IGameTickable> _observerManager = new();
+        private readonly IHostEnvironment _environment = environment;
 
         private class TickState
         {
@@ -71,9 +73,11 @@ namespace Silos.Services
 
             var state = new TickState();
 
+            var duration = _environment.IsDevelopment() ? TimeSpan.FromSeconds(2) : TimeSpan.FromMilliseconds(1000F / 128F);
+
             while (!StoppedCancellationTokenSource.IsCancellationRequested)
             {
-                var prevframe = state.UpdateTime.Add(TimeSpan.FromMilliseconds(1000F / 128F));
+                var prevframe = state.UpdateTime.Add(duration);
                 await UpdateAsync(state);
 
                 // lock 128fps, timePerFrame = 1000 / 128;

@@ -10,6 +10,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E3949B3F-A571-4A43-906F-57E71CB97450}"
 	ProjectSection(SolutionItems) = preProject
 		Directory.Build.props = Directory.Build.props
+		Directory.Build.targets = Directory.Build.targets
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebApi", "src\WebApi\WebApi.csproj", "{146629EA-DB41-4E8F-93ED-62A910193E5C}"
@@ -24,7 +25,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GrpcService", "src\GrpcServ
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "servers", "servers", "{91E16304-23E7-4D9D-91E1-9BE5D2A58459}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Savorboard.AppHost", "Savorboard.AppHost\Savorboard.AppHost.csproj", "{B192C88C-82FF-46EA-918A-364DF84E2287}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Savorboard.AppHost", "Savorboard.AppHost\Savorboard.AppHost.csproj", "{B192C88C-82FF-46EA-918A-364DF84E2287}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Savorboard.ServiceDefaults", "Savorboard.ServiceDefaults\Savorboard.ServiceDefaults.csproj", "{56EEE1FA-CBC4-454F-9D6A-CF3C8F70B06A}"
 EndProject

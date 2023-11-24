@@ -1,13 +1,13 @@
 syntax = "proto3";
 import "google/protobuf/any.proto";
-option csharp_namespace = "ConsoleApp";
+import "savorboard/Savorboard.proto";
+option csharp_namespace = "GrpcService";
 
 package gamehub;
 
-
 // The greeting service definition.
 service GameHub {
-	rpc Subscribe(SubscribeRequest) returns (stream MessageEvent);
+	rpc Subscribe(SubscribeRequest) returns (stream google.protobuf.Any);
 	rpc GetBackpackViewModel(GetBackpackViewModelPack) returns (BackpackViewModel);
 }
 
@@ -19,16 +19,6 @@ message BackpackViewModel {
 	int32 MaxSize = 1;
 }
 
-message MessageEvent {
-	int32 Seq = 1;
-	google.protobuf.Any Data = 2;
-}
-
 message SubscribeRequest {
 
-}
-
-message ChatMsg {
-	int32 channel = 1;
-	string content = 2;
 }

@@ -1,7 +1,9 @@
 ﻿using ConsoleApp.Protos;
 using Google.Protobuf.WellKnownTypes;
+using GrpcService;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Savorboard.Protocols;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -73,7 +75,7 @@ namespace ConsoleApp
                     break;
                 }
 
-                if (events.Data.TryUnpack<ChatMsg>(out var chatMsg))
+                if (events.TryUnpack<ChatMsg>(out var chatMsg))
                 {
                     _world.ChatMsgs.AddLast($"[{chatMsg.Channel}]:{chatMsg.Content}");
                 }

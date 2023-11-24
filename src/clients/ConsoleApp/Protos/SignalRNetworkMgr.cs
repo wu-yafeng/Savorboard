@@ -1,7 +1,10 @@
 ﻿using GameSdk.Observers;
 using GameSdk.ViewModels;
+using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
+using GrpcService;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
@@ -10,15 +13,30 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using WebApi.Protocols;
 
 namespace ConsoleApp.Protos
 {
-    public class SignalRNetworkMgr : IAsyncNetwork, IMessageChannel, IGameHub
+    public class ByteStringConverter : JsonConverter<ByteString>
     {
-        private readonly Queue<MessageEvent> _events = new();
+        public override ByteString? Read(ref Utf8JsonReader reader, System.Type typeToConvert, JsonSerializerOptions options)
+        {
+            return ByteString.CopyFromUtf8(reader.GetString());
+        }
+
+        public override void Write(Utf8JsonWriter writer, ByteString value, JsonSerializerOptions options)
+        {
+            writer.WriteStringValue(value.ToStringUtf8());
+        }
+    }
+
+    public class SignalRNetworkMgr : IAsyncNetwork, IGameHub
+    {
+        private readonly Queue<Any> _events = new();
         private readonly HubConnection _connection;
         private readonly ILogger _logger;
 
@@ -43,6 +61,10 @@ namespace ConsoleApp.Protos
         {
             _connection = new HubConnectionBuilder().WithAutomaticReconnect()
                  .WithUrl("http://localhost:5183/GameHub", options => { options.AccessTokenProvider = GetAccessTokenAsync; })
+                 .AddJsonProtocol(options =>
+                 {
+                     options.PayloadSerializerOptions.Converters.Add(new ByteStringConverter());
+                 })
                  .Build();
 
             // register all handlers.
@@ -64,60 +86,7 @@ namespace ConsoleApp.Protos
             _logger = logger;
         }
 
-        public Task OnEquipAddedAsync(UEquipViewModel equipAdded)
-        {
-            _events.Enqueue(new MessageEvent()
-            {
-                Data = Any.Pack(new ChatMsg()
-                {
-                    Channel = 2,
-                    Content = $"Server Pack {JsonSerializer.Serialize(equipAdded)}"
-                }),
-            });
-            return Task.CompletedTask;
-        }
-
-        public Task OnShowChatMsgAsync(string name, string message)
-        {
-            _events.Enqueue(new MessageEvent()
-            {
-                Data = Any.Pack(new ChatMsg()
-                {
-                    Channel = 2,
-                    Content = $"{name}:::{message}"
-                }),
-            });
-
-            return Task.CompletedTask;
-        }
-
-        public Task OnGameObjExtiAsync(long id, string type)
-        {
-            _events.Enqueue(new MessageEvent()
-            {
-                Data = Any.Pack(new ChatMsg()
-                {
-                    Channel = 2,
-                    Content = $"Obj:[{id}]-{type} exit current map."
-                }),
-            });
-            return Task.CompletedTask;
-        }
-
-        public Task OnHurtAsync(int skillid, int atker, string type)
-        {
-            _events.Enqueue(new MessageEvent()
-            {
-                Data = Any.Pack(new ChatMsg()
-                {
-                    Channel = 2,
-                    Content = $"you are attacked by {type}[{atker}] with skill[{skillid}]"
-                }),
-            });
-            return Task.CompletedTask;
-        }
-
-        public Task<MessageEvent?> PeekAsync()
+        public Task<Any?> PeekAsync()
         {
             if (!_events.TryDequeue(out var result))
             {
@@ -131,11 +100,10 @@ namespace ConsoleApp.Protos
         {
             await _connection.StartAsync(cancellationToken);
 
+            var channel = await Subscribe(cancellationToken);
             while (!cancellationToken.IsCancellationRequested)
             {
-                await HeartbeatAsync();
-
-                await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
+                _events.Enqueue(await channel.ReadAsync(cancellationToken));
             }
         }
 
@@ -154,9 +122,9 @@ namespace ConsoleApp.Protos
             return _connection.InvokeAsync<UBackpackViewModel>(nameof(GetBackpackAsync));
         }
 
-        public Task HeartbeatAsync()
+        public async Task<ChannelReader<Any>> Subscribe(CancellationToken cancellationToken = default)
         {
-            return _connection.SendAsync(nameof(HeartbeatAsync));
+            return await _connection.StreamAsChannelAsync<Any>(nameof(Subscribe));
         }
     }
 }

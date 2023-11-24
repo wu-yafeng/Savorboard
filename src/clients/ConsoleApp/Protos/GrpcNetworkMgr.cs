@@ -1,4 +1,6 @@
-﻿using Grpc.Core;
+﻿using Google.Protobuf.WellKnownTypes;
+using Grpc.Core;
+using GrpcService;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -12,7 +14,7 @@ namespace ConsoleApp.Protos
     {
         private readonly GameHub.GameHubClient _client;
         private readonly ILogger<GrpcNetworkMgr> _logger;
-        private readonly Queue<MessageEvent> _events = new();
+        private readonly Queue<Any> _events = new();
 
         public GrpcNetworkMgr(GameHub.GameHubClient client, ILogger<GrpcNetworkMgr> logger)
         {
@@ -25,7 +27,7 @@ namespace ConsoleApp.Protos
             return await _client.GetBackpackViewModelAsync(messagePack);
         }
 
-        public Task<MessageEvent?> PeekAsync()
+        public Task<Any?> PeekAsync()
         {
             if(!_events.TryDequeue(out var result))
             {

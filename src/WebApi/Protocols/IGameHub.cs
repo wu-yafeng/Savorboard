@@ -1,4 +1,6 @@
 ﻿using GameSdk.ViewModels;
+using Google.Protobuf.WellKnownTypes;
+using System.Threading.Channels;
 
 namespace WebApi.Protocols
 {
@@ -6,6 +8,7 @@ namespace WebApi.Protocols
     public interface IGameHub
     {
         Task<UBackpackViewModel> GetBackpackAsync();
-        Task HeartbeatAsync();
+
+        Task<ChannelReader<Any>> Subscribe(CancellationToken cancellationToken = default);
     }
 }

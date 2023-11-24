@@ -1,0 +1,31 @@
+<Project>
+	<ItemGroup Condition="'$(GrpcMode)' == 'server'">
+		<Protobuf Include="$(SolutionDir)\protocols\**\*.proto" GrpcServices="Server">
+			<Link>Protos\%(RecursiveDir)/%(FileName)%(Extension)</Link>
+		</Protobuf>
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(GrpcMode)' == 'client'">
+		<Protobuf Include="$(SolutionDir)\protocols\**\*.proto" GrpcServices="Client">
+			<Link>Protos\%(RecursiveDir)/%(FileName)%(Extension)</Link>
+		</Protobuf>
+		<PackageReference Include="Google.Protobuf" Version="3.25.1" />
+		<PackageReference Include="Grpc.Net.ClientFactory" Version="2.59.0" />
+		<PackageReference Include="Grpc.Tools" Version="2.59.0">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(GrpcMode)' == 'model'">
+		<Protobuf Include="$(SolutionDir)\protocols\savorboard\*.proto">
+			<Link>Protos\%(RecursiveDir)/%(FileName)%(Extension)</Link>
+		</Protobuf>
+		<PackageReference Include="Grpc.Tools" Version="2.59.0">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="Google.Protobuf" Version="3.25.1" />
+	</ItemGroup>
+
+</Project>
