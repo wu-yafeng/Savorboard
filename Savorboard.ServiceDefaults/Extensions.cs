@@ -55,7 +55,8 @@ public static class Extensions
 
                 tracing.AddAspNetCoreInstrumentation()
                        .AddGrpcClientInstrumentation()
-                       .AddHttpClientInstrumentation();
+                       .AddHttpClientInstrumentation()
+                       .AddBuiltInTracers();
             });
 
         builder.AddOpenTelemetryExporters();
@@ -115,5 +116,9 @@ public static class Extensions
         meterProviderBuilder.AddMeter(
             "Microsoft.AspNetCore.Hosting",
             "Microsoft.AspNetCore.Server.Kestrel",
-            "System.Net.Http");
+            "System.Net.Http",
+            "Savorboard");
+
+    private static TracerProviderBuilder AddBuiltInTracers(this TracerProviderBuilder builder) =>
+        builder.AddSource("Savorboard");
 }

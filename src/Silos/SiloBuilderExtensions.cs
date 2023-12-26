@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Orleans.Configuration;
+using Silos.Perf;
 using Silos.Services;
 using System;
 using System.Collections.Generic;
@@ -45,6 +46,7 @@ namespace Silos
             {
                 services.AddGrainService<TickService>();
                 services.AddGrainService<MetaService>();
+                services.AddSingleton(new DiagnosticHelper());
                 services.AddSingleton(typeof(IServiceClient<>), typeof(DefaultGrainServiceClient<>));
             });
 

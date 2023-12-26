@@ -11,6 +11,7 @@ using Silos.Perf;
 using Silos.PersistenStates;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,11 +19,13 @@ using System.Threading.Tasks;
 namespace Silos.Services
 {
     [Reentrant]
-    public class TickService(GrainId grainId, Silo silo, ILoggerFactory loggerFactory, IHostEnvironment environment) : GrainService(grainId, silo, loggerFactory), ITickService
+    public class TickService(GrainId grainId, Silo silo, ILoggerFactory loggerFactory, IHostEnvironment environment, DiagnosticHelper diagnostic)
+        : GrainService(grainId, silo, loggerFactory), ITickService
     {
         private readonly ILogger _logger = loggerFactory.CreateLogger<TickService>();
-        private readonly HashSet<IGameTickable> _observerManager = new();
+        private readonly HashSet<IGameTickable> _observerManager = [];
         private readonly IHostEnvironment _environment = environment;
+        private readonly DiagnosticHelper _diagnostic = diagnostic;
 
         private class TickState
         {
@@ -73,7 +76,7 @@ namespace Silos.Services
 
             var state = new TickState();
 
-            var duration = _environment.IsDevelopment() ? TimeSpan.FromSeconds(2) : TimeSpan.FromMilliseconds(1000F / 128F);
+            var duration = TimeSpan.FromSeconds(1);
 
             while (!StoppedCancellationTokenSource.IsCancellationRequested)
             {
@@ -107,14 +110,20 @@ namespace Silos.Services
             {
                 return;
             }
+            using var activity = _diagnostic.Trace.StartActivity("TickService.UpdateAsync");
 
             if (!device.IsReset)
             {
+                activity?.SetTag("activity.reset", "true");
+
+                var histogram = _diagnostic.Metric.CreateHistogram<int>("server_tick", "fps", "server tick frame per seconds.");
+
                 device.Reset(DateTimeOffset.Now);
-                device.OnResetFrameRate += (fps) => GameEventSource.Log.Tick(fps);
+                device.OnResetFrameRate += (fps) => histogram.Record(fps);
             }
 
             var deltaTime = device.GetDeltaTime(DateTimeOffset.Now);
+            activity?.SetTag("activity.delta_ms", deltaTime.TotalMilliseconds);
             await Task.WhenAll(_observerManager.Select(t => t.TickAsync(deltaTime)));
         }
 
